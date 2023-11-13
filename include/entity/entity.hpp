@@ -2,8 +2,6 @@
 
 namespace pecs {
 
-class Entity {
 
-};
 
 }

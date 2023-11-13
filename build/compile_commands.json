@@ -1,14 +1,14 @@
 [
 {
-  "directory": "/Users/w6rsty/Developer/Cpp/pecs/build",
-  "command": "clang++ -I/Users/w6rsty/Developer/Cpp/pecs/include -g -std=gnu++20 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk -o CMakeFiles/pecs.dir/src/pecs.cpp.o -c /Users/w6rsty/Developer/Cpp/pecs/src/pecs.cpp",
-  "file": "/Users/w6rsty/Developer/Cpp/pecs/src/pecs.cpp",
-  "output": "CMakeFiles/pecs.dir/src/pecs.cpp.o"
+  "directory": "D:/home/pecs/build",
+  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17 -o CMakeFiles\\pecs.dir\\src\\entity\\world.cpp.obj -c D:\\home\\pecs\\src\\entity\\world.cpp",
+  "file": "D:\\home\\pecs\\src\\entity\\world.cpp",
+  "output": "CMakeFiles\\pecs.dir\\src\\entity\\world.cpp.obj"
 },
 {
-  "directory": "/Users/w6rsty/Developer/Cpp/pecs/build",
-  "command": "/usr/bin/clang++ -I/Users/w6rsty/Developer/Cpp/pecs/include -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk -o test/CMakeFiles/pecs_test.dir/main.cpp.o -c /Users/w6rsty/Developer/Cpp/pecs/test/main.cpp",
-  "file": "/Users/w6rsty/Developer/Cpp/pecs/test/main.cpp",
-  "output": "test/CMakeFiles/pecs_test.dir/main.cpp.o"
+  "directory": "D:/home/pecs/build",
+  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17 -o test\\CMakeFiles\\pecs_test.dir\\main.cpp.obj -c D:\\home\\pecs\\test\\main.cpp",
+  "file": "D:\\home\\pecs\\test\\main.cpp",
+  "output": "test\\CMakeFiles\\pecs_test.dir\\main.cpp.obj"
 }
 ]
