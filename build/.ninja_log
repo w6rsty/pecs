@@ -1,9 +1,0 @@
-# ninja log v5
-1	248	7216316121912115	CMakeFiles/pecs.dir/src/entity/world.cpp.obj	af9b3da301d9a5fb
-249	337	7216316122642458	pecs.lib	ecae1734c76b2a09
-1	244	7216317304042545	CMakeFiles/pecs.dir/src/pecs.cpp.obj	45cde0ad58708354
-245	334	7216317304773233	pecs.lib	d05cebd3b20bbc72
-1	249	7216318735924560	CMakeFiles/pecs.dir/src/pecs.cpp.obj	45cde0ad58708354
-249	338	7216318736650215	pecs.lib	d05cebd3b20bbc72
-28	510	7216318738503772	test/CMakeFiles/pecs_test.dir/main.cpp.obj	77fdd4e028f584d3
-510	624	7216318739429703	test/pecs_test.exe	65add36f46a88036
