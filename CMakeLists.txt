@@ -14,4 +14,6 @@ target_compile_features(pecs PRIVATE cxx_std_17)
 
 add_subdirectory(test)
 
-# set(CMAKE_CXX_COMPILER "clang++")
+if (APPLE) 
+    set(CMAKE_CXX_COMPILER "clang++")
+endif()

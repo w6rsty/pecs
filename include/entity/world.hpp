@@ -16,12 +16,16 @@ namespace pecs {
 using ComponentID = uint32_t;
 using Entity = uint32_t;
 
+struct Resource {};
+struct Component {};
+
+template <typename Category>
 class IndexGetter final {
 private:
-    inline static ComponentID curIdx_ = {};
+    inline static uint32_t curIdx_ = {};
 public:
     template <typename T>
-    static ComponentID Get() { return curIdx_++; }
+    static uint32_t Get() { return curIdx_++; }
 };
 
 template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
@@ -87,6 +91,23 @@ private:
     // 储存所有组件
     ComponentMap componentMap_;
     std::unordered_map<Entity, ComponentContainer> entities_;
+
+    struct ResourceInfo {
+        void* resource = nullptr;
+        using DestroyFunc = void(*)(void*);
+
+        DestroyFunc destroy;
+
+        ResourceInfo(DestroyFunc destory) : destroy(destory) {
+            assertm("Destory function can not be null", destory);
+        }
+        ResourceInfo() : destroy(nullptr) {}
+        ~ResourceInfo() {
+            destroy(resource);
+        }
+    };
+
+    std::unordered_map<ComponentID, ResourceInfo> resources_;
 };
 
 class Commands final {
@@ -112,14 +133,37 @@ public:
             }
             world_.entities_.erase(it);
         }
+        return *this;
+    }
 
+    template <typename T>
+    Commands& setResource(T&& resource) {
+        auto index = IndexGetter<Resource>::Get<T>();
+        if (auto it = world_.resources_.find(index); it != world_.resources_.end()) {
+            assertm("Resources already exsits", it->second.resource);
+            it->second.resource = new T(std::forward<T>(resource));
+        } else {
+            auto newIt = world_.resources_.emplace(index, World::ResourceInfo([](void* elem) { delete (T*)elem; }));
+            newIt.first->second.resource = new T;
+            *(T*)(newIt.first->second.resource) = std::forward<T>(resource);
+        }
+        return *this;
+    }
+
+    template <typename T>
+    Commands& removeResource() {
+        auto index = IndexGetter<Resource>::Get<T>();
+        if (auto it = world_.resources_.find(index); it != world_.resources_.end()) {
+            delete (T*)it->second.resource;
+            it->second.resource = nullptr;
+        }
         return *this;
     }
     
 private:
     template <typename T, typename... Remains>
     void doSpawn(Entity entity, T&& component, Remains&&... remains) {
-        auto index = IndexGetter::Get<T>(); // 每种Component都会具有单独的Index计数器
+        auto index = IndexGetter<Component>::Get<T>(); // 每种Component都会具有单独的Index计数器
         if (auto it = world_.componentMap_.find(index); it == world_.componentMap_.end()) {
             // 没有找到则生成新的Index
             // TODO: might unecessary, need test
