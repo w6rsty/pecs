@@ -11,7 +11,7 @@
 # =============================================================================
 
 # =============================================================================
-# Project: Project
+# Project: pecs
 # Configurations: Debug
 # =============================================================================
 
@@ -49,12 +49,12 @@ cmake_ninja_workdir = D$:/home/pecs/build/
 
 build cmake_object_order_depends_target_pecs: phony || CMakeFiles/pecs.dir
 
-build CMakeFiles/pecs.dir/src/entity/world.cpp.obj: CXX_COMPILER__pecs_unscanned_Debug D$:/home/pecs/src/entity/world.cpp || cmake_object_order_depends_target_pecs
-  DEP_FILE = CMakeFiles\pecs.dir\src\entity\world.cpp.obj.d
-  FLAGS = -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17
+build CMakeFiles/pecs.dir/src/pecs.cpp.obj: CXX_COMPILER__pecs_unscanned_Debug D$:/home/pecs/src/pecs.cpp || cmake_object_order_depends_target_pecs
+  DEP_FILE = CMakeFiles\pecs.dir\src\pecs.cpp.obj.d
+  FLAGS = -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd
   INCLUDES = -ID:/home/pecs/include
   OBJECT_DIR = CMakeFiles\pecs.dir
-  OBJECT_FILE_DIR = CMakeFiles\pecs.dir\src\entity
+  OBJECT_FILE_DIR = CMakeFiles\pecs.dir\src
   TARGET_COMPILE_PDB = CMakeFiles\pecs.dir\pecs.pdb
   TARGET_PDB = pecs.pdb
 
@@ -66,7 +66,7 @@ build CMakeFiles/pecs.dir/src/entity/world.cpp.obj: CXX_COMPILER__pecs_unscanned
 #############################################
 # Link the static library pecs.lib
 
-build pecs.lib: CXX_STATIC_LIBRARY_LINKER__pecs_Debug CMakeFiles/pecs.dir/src/entity/world.cpp.obj
+build pecs.lib: CXX_STATIC_LIBRARY_LINKER__pecs_Debug CMakeFiles/pecs.dir/src/pecs.cpp.obj
   LANGUAGE_COMPILE_FLAGS = -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd
   OBJECT_DIR = CMakeFiles\pecs.dir
   POST_BUILD = cd .
@@ -115,7 +115,7 @@ build cmake_object_order_depends_target_pecs_test: phony || cmake_object_order_d
 
 build test/CMakeFiles/pecs_test.dir/main.cpp.obj: CXX_COMPILER__pecs_test_unscanned_Debug D$:/home/pecs/test/main.cpp || cmake_object_order_depends_target_pecs_test
   DEP_FILE = test\CMakeFiles\pecs_test.dir\main.cpp.obj.d
-  FLAGS = -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17
+  FLAGS = -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd
   INCLUDES = -ID:/home/pecs/include
   OBJECT_DIR = test\CMakeFiles\pecs_test.dir
   OBJECT_FILE_DIR = test\CMakeFiles\pecs_test.dir
@@ -199,14 +199,14 @@ build test/all: phony test/pecs_test.exe
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake D$:/home/pecs/CMakeLists.txt D$:/home/pecs/test/CMakeLists.txt D$:/software/cmake/share/cmake-3.26/Modules/CMakeCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCXXInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeGenericSystem.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeRCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-C.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-C.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake
+build build.ninja: RERUN_CMAKE | CMakeCache.txt CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake D$:/home/pecs/CMakeLists.txt D$:/home/pecs/test/CMakeLists.txt D$:/software/cmake/share/cmake-3.26/Modules/CMakeCXXInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeGenericSystem.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeRCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake D$:/home/pecs/CMakeLists.txt D$:/home/pecs/test/CMakeLists.txt D$:/software/cmake/share/cmake-3.26/Modules/CMakeCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCXXInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeGenericSystem.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeRCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-C.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-C.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake: phony
+build CMakeCache.txt CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake D$:/home/pecs/CMakeLists.txt D$:/home/pecs/test/CMakeLists.txt D$:/software/cmake/share/cmake-3.26/Modules/CMakeCXXInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeGenericSystem.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeRCInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake D$:/software/cmake/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Compiler/Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang-CXX.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows-Clang.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/Windows.cmake D$:/software/cmake/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake: phony
 
 
 #############################################

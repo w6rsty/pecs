@@ -11,29 +11,29 @@ template <typename T, size_t PageSize, typename = std::enable_if<std::is_integra
 class SparseSet final {
 private:
 public:
-    std::vector<T> _packed;
-    std::vector<std::unique_ptr<std::array<T, PageSize>>> _sparse;
+    std::vector<T> packed_;
+    std::vector<std::unique_ptr<std::array<T, PageSize>>> sparse_;
     static constexpr T null = std::numeric_limits<T>::max();
 public:
     void add(T t) {
-        _packed.push_back(t);
+        packed_.push_back(t);
         assure(t);
-        index(t) = _packed.size() - 1;
+        index(t) = packed_.size() - 1;
     }   
 
     void remove(T t) {
         if (!contain(t)) return;
 
         auto& idx = index(t);
-        if (idx == _packed.size() -1) {
+        if (idx == packed_.size() -1) {
             idx = null;
-            _packed.pop_back();
+            packed_.pop_back();
         } else {
-            auto last = _packed.back();
+            auto last = packed_.back();
             index(last) = idx;
-            std::swap(_packed[idx], _packed.back());
+            std::swap(packed_[idx], packed_.back());
             idx = null;
-            _packed.pop_back();
+            packed_.pop_back();
         }
     }
 
@@ -43,16 +43,16 @@ public:
         auto p = page(t);
         auto o = offset(t);
 
-        return p < _sparse.size() && _sparse[page(t)]->at(offset(t)) != null;
+        return p < sparse_.size() && sparse_[page(t)]->at(offset(t)) != null;
     }
 
     void clear() {
-        _packed.clear();
-        _sparse.clear();
+        packed_.clear();
+        sparse_.clear();
     }
 
-    auto begin() { return _packed.begin(); }
-    auto end() { return _packed.end(); }
+    auto begin() { return packed_.begin(); }
+    auto end() { return packed_.end(); }
 private:
     size_t page(T t) const {
         return t / PageSize;
@@ -63,19 +63,19 @@ private:
     }} 
 
     T index(T t) const {
-        return _sparse[page(t)]->at(offset(t));
+        return sparse_[page(t)]->at(offset(t));
     }
 
     T& index(T t) {
-        return _sparse[page(t)]->at(offset(t));
+        return sparse_[page(t)]->at(offset(t));
     }
 
     void assure(T t) {
         auto p = page(t);
-        if (p >= _sparse.size()) {
-            for (size_t i = _sparse.size(); i <= p; i++) {
-                _sparse.emplace_back(std::make_unique<std::array<T, PageSize>>());
-                _sparse[i]->fill(null);
+        if (p >= sparse_.size()) {
+            for (size_t i = sparse_.size(); i <= p; i++) {
+                sparse_.emplace_back(std::make_unique<std::array<T, PageSize>>());
+                sparse_[i]->fill(null);
             }
         }
     }

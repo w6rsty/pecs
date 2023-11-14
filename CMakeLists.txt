@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 
+project(pecs LANGUAGES CXX)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(PECS_SRC src/entity/world.cpp)
+aux_source_directory(src PECS_SRC)
 
 add_library(pecs STATIC ${PECS_SRC})
 

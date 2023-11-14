@@ -1,13 +1,13 @@
 [
 {
   "directory": "D:/home/pecs/build",
-  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17 -o CMakeFiles\\pecs.dir\\src\\entity\\world.cpp.obj -c D:\\home\\pecs\\src\\entity\\world.cpp",
-  "file": "D:\\home\\pecs\\src\\entity\\world.cpp",
-  "output": "CMakeFiles\\pecs.dir\\src\\entity\\world.cpp.obj"
+  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\pecs.dir\\src\\pecs.cpp.obj -c D:\\home\\pecs\\src\\pecs.cpp",
+  "file": "D:\\home\\pecs\\src\\pecs.cpp",
+  "output": "CMakeFiles\\pecs.dir\\src\\pecs.cpp.obj"
 },
 {
   "directory": "D:/home/pecs/build",
-  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -std=gnu++17 -o test\\CMakeFiles\\pecs_test.dir\\main.cpp.obj -c D:\\home\\pecs\\test\\main.cpp",
+  "command": "D:\\Package\\llvm\\bin\\clang++.exe -ID:/home/pecs/include -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o test\\CMakeFiles\\pecs_test.dir\\main.cpp.obj -c D:\\home\\pecs\\test\\main.cpp",
   "file": "D:\\home\\pecs\\test\\main.cpp",
   "output": "test\\CMakeFiles\\pecs_test.dir\\main.cpp.obj"
 }

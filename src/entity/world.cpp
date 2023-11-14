@@ -2,8 +2,4 @@
 
 namespace pecs {
 
-void World::update() {
-
-}
-
 }
