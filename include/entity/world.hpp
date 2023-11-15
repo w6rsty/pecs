@@ -61,22 +61,22 @@ public:
     World(const World&) = delete;
     World& operator=(const World&) = delete;
 
-    World& addStartupSystem(StartupSystem sys) {
+    World& AddStartupSystem(StartupSystem sys) {
         startupSystems_.push_back(sys);
         return *this;
     }
 
-    World& addSystem(UpdateSystem sys) {
+    World& AddSystem(UpdateSystem sys) {
         updateSystems_.push_back(sys);
         return *this;
     }
 
     template <typename T>
-    World& setResource(T&& resource);
+    World& SetResource(T&& resource);
 
-    void startup();
-    void update();
-    void shutdown() {
+    void Startup();
+    void Update();
+    void Shutdown() {
         entities_.clear();
         resources_.clear();
         componentMap_.clear();
@@ -152,37 +152,43 @@ private:
 class Commands final {
 private:
     World& world_;
+
+    using DestroyFunc = void(*)(void*);
+
+    struct ResourceDestoryInfo {
+        uint32_t index;
+        DestroyFunc destroy;
+
+        ResourceDestoryInfo(uint32_t index, DestroyFunc destoroy) : index(index), destroy(destoroy) {}
+
+    };
+
+    std::vector<Entity> destroyEntities_;
+    std::vector<ResourceDestoryInfo> destoryResources_;
 public:
     Commands(World& world) : world_(world) {}
 
     // 创建新的Entity
     template <typename... ComponentTypes>
-    Commands& spawn(ComponentTypes&&... components) {
-        spawnAndReturn<ComponentTypes...>(std::forward<ComponentTypes>(components)...);
+    Commands& Spawn(ComponentTypes&&... components) {
+        SpawnAndReturn<ComponentTypes...>(std::forward<ComponentTypes>(components)...);
         return *this;
     }
 
     template <typename... ComponentTypes>
-    Entity spawnAndReturn(ComponentTypes&&... components) {
+    Entity SpawnAndReturn(ComponentTypes&&... components) {
         Entity entity = EntityGenerator::Gen();
         doSpawn(entity, std::forward<ComponentTypes>(components)...);
         return entity;
     }
 
-    Commands& destory(Entity entity) {
-        if (auto it = world_.entities_.find(entity); it != world_.entities_.end()) {
-            for (auto [id, component] : it->second) {
-                auto& componentInfo = world_.componentMap_[id];
-                componentInfo.pool.Destory(component);
-                componentInfo.sparseSet.remove(entity);
-            }
-            world_.entities_.erase(it);
-        }
+    Commands& Destory(Entity entity) {
+        destroyEntities_.push_back(entity);
         return *this;
     }
 
     template <typename T>
-    Commands& setResource(T&& resource) {
+    Commands& SetResource(T&& resource) {
         auto index = IndexGetter<Resource>::Get<T>();
         if (auto it = world_.resources_.find(index); it != world_.resources_.end()) {
             assertm("Resources already exsits", it->second.resource);
@@ -196,7 +202,7 @@ public:
     }
 
     template <typename T>
-    Commands& removeResource() {
+    Commands& RemoveResource() {
         auto index = IndexGetter<Resource>::Get<T>();
         if (auto it = world_.resources_.find(index); it != world_.resources_.end()) {
             delete (T*)it->second.resource;
@@ -204,7 +210,13 @@ public:
         }
         return *this;
     }
-    
+
+    void Execute() {
+        for (auto e : destroyEntities_) {
+            destory(e);
+        }
+    }
+
 private:
     template <typename T, typename... Remains>
     void doSpawn(Entity entity, T&& component, Remains&&... remains) {
@@ -228,6 +240,24 @@ private:
         // 递归可变参数
         if constexpr (sizeof...(remains) != 0) {
             doSpawn<Remains...>(entity, std::forward<Remains>(remains)...);
+        }
+    }
+
+    void destory(Entity entity) {
+        if (auto it = world_.entities_.find(entity); it != world_.entities_.end()) {
+            for (auto [id, component] : it->second) {
+                auto& componentInfo = world_.componentMap_[id];
+                componentInfo.pool.Destory(component);
+                componentInfo.sparseSet.remove(entity);
+            }
+            world_.entities_.erase(it);
+        }
+    }
+
+    void removeResource(ResourceDestoryInfo& info) {
+        if (auto it = world_.resources_.find(info.index); it != world_.resources_.end()) {
+            info.destroy(it->second.resource);
+            it->second.resource = nullptr;
         }
     }
 };
@@ -259,21 +289,21 @@ public:
     Queryer(World& world) : world_(world) {}
 
     template <typename... Components>
-    std::vector<Entity> query() {
+    std::vector<Entity> Query() {
         std::vector<Entity> entities;
         doQuery<Components...>(entities);
         return entities;
     }
 
     template <typename T>
-    bool has(Entity entity) {
+    bool Has(Entity entity) {
         auto it = world_.entities_.find(entity);
         auto index = IndexGetter<Component>::Get<T>();
         return it != world_.entities_.end() && it->second.find(index) != it->second.end();
     }
 
     template <typename T>
-    T& get(Entity entity) {
+    T& Get(Entity entity) {
         auto index = IndexGetter<Component>::Get<T>();
         return *((T*)world_.entities_[entity][index]);
     }
@@ -308,22 +338,22 @@ private:
     }
 };
 
-inline void World::startup() {
+inline void World::Startup() {
     for (auto sys : startupSystems_) {
         sys(Commands{*this});
     }
 }
 
-inline void World::update() {
+inline void World::Update() {
     for (auto sys : updateSystems_) {
         sys(Commands{*this}, Queryer{*this}, Resources{*this});
     }
 }
 
 template <typename T>
-World& World::setResource(T &&resource) {
+World& World::SetResource(T &&resource) {
     Commands command(*this);
-    command.setResource(std::forward<T>(resource));
+    command.SetResource(std::forward<T>(resource));
 
     return *this;
 }

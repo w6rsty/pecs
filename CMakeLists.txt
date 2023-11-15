@@ -10,7 +10,7 @@ add_library(pecs STATIC ${PECS_SRC})
 
 target_include_directories(pecs PUBLIC include)
 
-target_compile_features(pecs PRIVATE cxx_std_17)
+target_compile_features(pecs PRIVATE cxx_std_20)
 
 add_subdirectory(test)
 

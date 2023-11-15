@@ -1,68 +1,87 @@
-#include "config/config.hpp"
 #include "entity/world.hpp"
 #include "pecs.hpp"
-#include <cstdio>
 #include <string>
 #include <iostream>
 
 using namespace pecs;
 
+struct Player {};
+struct Monster {};
+
 struct Name {
     std::string name;
 };
 
-struct ID {
-    unsigned int id;
+struct Position {
+    float x, y;
 };
 
-struct Timer {
-    int t;
-};
-
-void StartUpSystem(Commands command) {
-    command.spawn<Name>(Name{"Mike"})
-           .spawn<Name, ID>(Name{"Jack"}, {1})
-           .spawn<ID>(ID{114})
-           ;
+std::ostream& operator<<(std::ostream& stream, const Position& pos) {
+    stream << "(" <<  pos.x << ", " << pos.y << ")";
+    return stream;
 }
 
-void EchoNameSystem(Commands command, Queryer queryer, Resources resources) {
-    std::cout << "<<Echo name system>>" << std::endl;
-    auto entities = queryer.query<Name>();
-    for (auto entity : entities) {
-        std::cout << queryer.get<Name>(entity).name << std::endl;
+float distance(Position& p1, Position& p2) {
+    return sqrt((p1.x - p2.x) * ( p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+}
+
+struct HP {
+    float value;
+    float max = 100.0f;
+};
+
+void startup(Commands command) {
+    command.Spawn(Player{}, Name{"w6rsty"}, Position{ .x = 0.0f, .y = 0.0f }, HP{ .value = 100.0f })
+           .Spawn(Monster{}, Name{"XXX"}, Position{ .x = 1.0f, .y = 1.0f}, HP{ .value = 100.0f});
+}
+
+void attackSystem(Commands command, Queryer queryer, Resources resources) {
+    auto monsters = queryer.Query<Monster>();
+    auto players  = queryer.Query<Player>();
+
+    for (auto player : players) {
+        Position& p1 = queryer.Get<Position>(player);
+        for (auto monster : monsters) {
+            Position& p2 = queryer.Get<Position>(monster);
+
+            if (distance(p1, p2) <= 2.0f) {
+                auto& hp = queryer.Get<HP>(player);
+                hp.value -= 10.f;
+                std::cout << queryer.Get<Name>(monster).name << " 攻击了 " << queryer.Get<Name>(player).name << std::endl;
+            }
+        }
     }
 }
 
-void EchoIDSystem(Commands command, Queryer queryer, Resources resources) {
-    std::cout << "<<Echo ID system>>" << std::endl;
-    auto entities = queryer.query<ID>();
+void echoPlayerSystem(Commands command, Queryer queryer, Resources resources) {
+    auto entities = queryer.Query<Player>();
     for (auto entity : entities) {
-        std::cout << queryer.get<ID>(entity).id << std::endl;
+        std::cout << queryer.Get<Name>(entity).name << " | " 
+        << queryer.Get<Position>(entity) << " | " 
+        << "HP: "<< queryer.Get<HP>(entity).value << std::endl;
     }
 }
 
-void EchoTimeSystem(Commands command, Queryer queryer, Resources resources) {
-    std::cout << "<<Echo timer>>" << std::endl;
-    auto resource = resources.get<Timer>();
-    std::cout << resource.t << std::endl;
+void echoHPSystem(Commands command, Queryer queryer, Resources resources) {
+    auto entities = queryer.Query<HP>();
+    for (auto entity : entities) {
+        
+        std::cout << queryer.Get<Name>(entity).name << " HP: " <<queryer.Get<HP>(entity).value << std::endl;
+    }
 }
+
 
 int main() {
     World world;
-    world.addStartupSystem(StartUpSystem)
-         .setResource<Timer>(Timer{0})
-         .addSystem(EchoNameSystem)
-         .addSystem(EchoIDSystem)
-         .addSystem(EchoTimeSystem)
-         ;
+    world.AddStartupSystem(startup)
+         .AddSystem(attackSystem)
+         .AddSystem(echoPlayerSystem);
 
-    world.startup();
+    world.Startup();
 
-    for (int i = 0 ; i < 3; i++) {
-        world.update();
-        std::cout  << "=================" << std::endl;
+    for (int i{0}; i < 3; i++) {
+        world.Update();
     }
 
-    world.shutdown();
+    world.Shutdown();
 }
