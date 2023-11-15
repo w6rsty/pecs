@@ -3,6 +3,7 @@
 #include "pecs.hpp"
 #include <cstdio>
 #include <string>
+#include <iostream>
 
 using namespace pecs;
 
@@ -15,13 +16,13 @@ struct ID {
 };
 
 struct Timer {
-    int timer;
+    int t;
 };
 
 int main() {
     World world;
     Commands command(world);
     command.spawn<Name>(Name{"Hello"})
-           .setResource<Timer>(Timer{1})
-           .removeResource<Timer>();
+        .spawn<Name, ID>(Name{"Jack"}, {1})
+        .setResource<Timer>(Timer{123});
 }

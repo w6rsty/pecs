@@ -2,8 +2,10 @@
 #include "../pecs.hpp"
 #include "container/sparse_set.hpp"
 #include "entity/world.hpp"
+#include <_types/_uint32_t.h>
 #include <errno.h>
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <cassert>
@@ -25,7 +27,10 @@ private:
     inline static uint32_t curIdx_ = {};
 public:
     template <typename T>
-    static uint32_t Get() { return curIdx_++; }
+    static uint32_t Get() {
+        static uint32_t id = curIdx_++; 
+        return id; 
+    }
 };
 
 template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
@@ -39,11 +44,19 @@ public:
 using EntityGenerator = IDGenrator<Entity>;
 
 class Commands;
+class Resources;
+class Queryer;
 
 class World final {
 public:
     friend class Commands;
+    friend class Resources;
+    friend class Queryer;
     using ComponentContainer = std::unordered_map<ComponentID, void*>;
+
+    World() = default;
+    World(const World&) = delete;
+    World& operator=(const World&) = delete;
 private:
     struct Pool {
         std::vector<void*> instances;
@@ -96,12 +109,12 @@ private:
         void* resource = nullptr;
         using DestroyFunc = void(*)(void*);
 
-        DestroyFunc destroy;
+        DestroyFunc destroy = nullptr;
 
         ResourceInfo(DestroyFunc destory) : destroy(destory) {
             assertm("Destory function can not be null", destory);
         }
-        ResourceInfo() : destroy(nullptr) {}
+        ResourceInfo() = default;
         ~ResourceInfo() {
             destroy(resource);
         }
@@ -119,9 +132,15 @@ public:
     // 创建新的Entity
     template <typename... ComponentTypes>
     Commands& spawn(ComponentTypes&&... components) {
+        spawnAndReturn<ComponentTypes...>(std::forward<ComponentTypes>(components)...);
+        return *this;
+    }
+
+    template <typename... ComponentTypes>
+    Entity spawnAndReturn(ComponentTypes&&... components) {
         Entity entity = EntityGenerator::Gen();
         doSpawn(entity, std::forward<ComponentTypes>(components)...);
-        return *this;
+        return entity;
     }
 
     Commands& destory(Entity entity) {
@@ -183,6 +202,84 @@ private:
         // 递归可变参数
         if constexpr (sizeof...(remains) != 0) {
             doSpawn<Remains...>(entity, std::forward<Remains>(remains)...);
+        }
+    }
+};
+
+class Resources final {
+private:
+    World& world_;
+public:
+    Resources(World& world) : world_(world) {}
+
+    template <typename T>
+    bool has() const {
+        auto index = IndexGetter<Resource>::Get<T>();
+        auto it = world_.resources_.find(index);
+        return it != world_.resources_.end() && it->second.resource;
+    }
+
+    template <typename T>
+    T& get() {
+        auto index = IndexGetter<Resource>::Get<T>();
+        return *((T*)world_.resources_[index].resource);
+    }
+};
+
+class Queryer final {
+private:
+    World& world_;
+public:
+    Queryer(World& world) : world_(world) {}
+
+    template <typename... Components>
+    std::vector<Entity> query() {
+        std::vector<Entity> entities;
+        doQuery<Components...>(entities);
+        return entities;
+    }
+
+    template <typename T>
+    bool has(Entity entity) {
+        auto it = world_.entities_.find(entity);
+        auto index = IndexGetter<Component>::Get<T>();
+        return it != world_.entities_.end() && it->second.find(index) != it->second.end();
+    }
+
+    template <typename T>
+    T& get(Entity entity) {
+        auto index = IndexGetter<Component>::Get<T>();
+        return *((T*)world_.entities_[entity][index]);
+    }
+private:
+    template <typename T, typename... Remains>
+    bool doQuery(std::vector<Entity>& outEntities) {
+        auto index = IndexGetter<Component>::Get<T>();
+        World::ComponentInfo& info  = world_.componentMap_[index];
+
+        for (auto e : info.sparseSet) {
+            if constexpr (sizeof...(Remains) != 0) {
+                doQueryRemains<Remains...>(e, outEntities);
+            } else {
+                outEntities.push_back(e);
+            }
+        }
+        return !outEntities.empty();
+    }
+
+    template <typename T, typename... Remains>
+    bool doQueryRemains(Entity entity, std::vector<Entity>& outEntites) {
+        auto index = IndexGetter<Component>::Get<T>();
+        auto& componentContainer = world_.entities_[entity];
+        if (auto it = componentContainer.find(index); it == componentContainer.end()) {
+            return false;
+        }
+
+        if constexpr (sizeof...(Remains) == 0) {
+            outEntites.push_back(entity);
+            return true;
+        } else {
+            doQueryRemains<Remains...>(entity, outEntites);
         }
     }
 };
