@@ -47,6 +47,9 @@ class Commands;
 class Resources;
 class Queryer;
 
+using UpdateSystem = void(*)(Commands, Queryer, Resources);
+using StartupSystem = void(*)(Commands);
+
 class World final {
 public:
     friend class Commands;
@@ -57,6 +60,27 @@ public:
     World() = default;
     World(const World&) = delete;
     World& operator=(const World&) = delete;
+
+    World& addStartupSystem(StartupSystem sys) {
+        startupSystems_.push_back(sys);
+        return *this;
+    }
+
+    World& addSystem(UpdateSystem sys) {
+        updateSystems_.push_back(sys);
+        return *this;
+    }
+
+    template <typename T>
+    World& setResource(T&& resource);
+
+    void startup();
+    void update();
+    void shutdown() {
+        entities_.clear();
+        resources_.clear();
+        componentMap_.clear();
+    }
 private:
     struct Pool {
         std::vector<void*> instances;
@@ -121,6 +145,8 @@ private:
     };
 
     std::unordered_map<ComponentID, ResourceInfo> resources_;
+    std::vector<StartupSystem> startupSystems_;
+    std::vector<UpdateSystem> updateSystems_;
 };
 
 class Commands final {
@@ -253,7 +279,7 @@ public:
     }
 private:
     template <typename T, typename... Remains>
-    bool doQuery(std::vector<Entity>& outEntities) {
+    void doQuery(std::vector<Entity>& outEntities) {
         auto index = IndexGetter<Component>::Get<T>();
         World::ComponentInfo& info  = world_.componentMap_[index];
 
@@ -264,24 +290,42 @@ private:
                 outEntities.push_back(e);
             }
         }
-        return !outEntities.empty();
     }
 
     template <typename T, typename... Remains>
-    bool doQueryRemains(Entity entity, std::vector<Entity>& outEntites) {
+    void doQueryRemains(Entity entity, std::vector<Entity>& outEntites) {
         auto index = IndexGetter<Component>::Get<T>();
         auto& componentContainer = world_.entities_[entity];
         if (auto it = componentContainer.find(index); it == componentContainer.end()) {
-            return false;
+            return;
         }
 
         if constexpr (sizeof...(Remains) == 0) {
             outEntites.push_back(entity);
-            return true;
         } else {
             doQueryRemains<Remains...>(entity, outEntites);
         }
     }
 };
+
+inline void World::startup() {
+    for (auto sys : startupSystems_) {
+        sys(Commands{*this});
+    }
+}
+
+inline void World::update() {
+    for (auto sys : updateSystems_) {
+        sys(Commands{*this}, Queryer{*this}, Resources{*this});
+    }
+}
+
+template <typename T>
+World& World::setResource(T &&resource) {
+    Commands command(*this);
+    command.setResource(std::forward<T>(resource));
+
+    return *this;
+}
 
 }
