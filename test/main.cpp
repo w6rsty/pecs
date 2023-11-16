@@ -1,5 +1,4 @@
-#include "entity/world.hpp"
-#include "pecs.hpp"
+#include "world.hpp"
 #include <string>
 #include <iostream>
 
@@ -35,7 +34,7 @@ void startup(Commands& command) {
            .Spawn(Monster{}, Name{"XXX"}, Position{ .x = 1.0f, .y = 1.0f}, HP{ .value = 100.0f});
 }
 
-void attackSystem(Commands& command, Queryer queryer, Resources resources) {
+void attackSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
     auto monsters = queryer.Query<Monster>();
     auto players  = queryer.Query<Player>();
 
@@ -53,7 +52,7 @@ void attackSystem(Commands& command, Queryer queryer, Resources resources) {
     }
 }
 
-void echoPlayerSystem(Commands& command, Queryer queryer, Resources resources) {
+void echoPlayerSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
     auto entities = queryer.Query<Player>();
     for (auto entity : entities) {
         std::cout << queryer.Get<Name>(entity).name << " | " 
@@ -62,7 +61,7 @@ void echoPlayerSystem(Commands& command, Queryer queryer, Resources resources) {
     }
 }
 
-void echoHPSystem(Commands& command, Queryer queryer, Resources resources) {
+void echoHPSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
     auto entities = queryer.Query<HP>();
     for (auto entity : entities) {
         

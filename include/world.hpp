@@ -1,17 +1,15 @@
 #pragma once
-#include "../pecs.hpp"
-#include "container/sparse_set.hpp"
-#include "entity/world.hpp"
-#include <_types/_uint32_t.h>
-#include <errno.h>
+#include <vector>
+#include <utility>
+#include <cassert>
+#include <algorithm>
+#include <optional>
 #include <functional>
 #include <type_traits>
-#include <utility>
-#include <vector>
-#include <algorithm>
-#include <cassert>
 #include <unordered_map>
+#include "sparse_set.hpp"
 
+#define PECS_SPARSE_PAGE 32
 #define assertm(msg, expr) assert(((void)msg, (expr)))
 
 namespace pecs {
@@ -21,6 +19,110 @@ using Entity = uint32_t;
 
 struct Resource {};
 struct Component {};
+
+template <typename T>
+class EventStaging final {
+public:
+    static bool Has() {
+        return event_ != std::nullopt;
+    }
+
+    static void Set(T&& t) {
+        event_ = std::move(t);
+    }
+
+    static void Set(const T& t) {
+        event_ = t;
+    }
+
+    static T& Get() {
+        return *event_;
+    }
+
+    static void Clear() {
+        event_ = std::nullopt;
+    }
+private:
+    inline static std::optional<T> event_ = std::nullopt;
+};
+
+template <typename T> 
+class EventReader {
+public:
+  bool Has() {
+    return EventStaging<T>::Has();
+  }
+
+  T Read(){
+    return EventStaging<T>::Read();
+  };
+
+  void Clear() {
+    EventStaging<T>::Clear();
+  }
+};
+
+class Events final {
+public:
+    friend class World;
+
+    template <typename T>
+    friend class EventWriter;
+
+    template <typename T>
+    auto Reader();
+
+    template <typename T>
+    auto Writer();
+private:
+    std::vector<void(*)(void)> removeEventFuncs_;
+    std::vector<void(*)(void)> removeOldEventFuncs_;
+    std::vector<std::function<void(void)>> addEventFuncs_;
+public:
+    void addAllEvent() {
+        for (auto func : addEventFuncs_) {
+            func();
+        }
+        addEventFuncs_.clear();
+    }
+
+    void removeOldEvents() {
+        for (auto func : removeOldEventFuncs_) {
+            func();
+        }
+        removeOldEventFuncs_ = removeEventFuncs_;
+        removeEventFuncs_.clear();
+    }
+};
+
+template <typename T> 
+class EventWriter {
+public:
+    EventWriter(Events& e) : events_(e) {}
+    void Write(const T& t);
+private:
+    Events& events_;
+};
+
+template <typename T>
+auto Events::Reader() {
+    return EventReader<T>{};
+}
+
+template <typename T>
+auto Events::Writer() {
+    return EventWriter<T>{*this};
+}
+
+template <typename T>
+void EventWriter<T>::Write(const T& t) {
+    events_.addEventFuncs_.push_back([=]() {
+        EventStaging<T>::Set(t);
+    });
+    events_.removeEventFuncs_.push_back([=]() {
+        EventStaging<T>::Clear();
+    });
+}
 
 template <typename Category>
 class IndexGetter final {
@@ -47,8 +149,9 @@ using EntityGenerator = IDGenrator<Entity>;
 class Commands;
 class Resources;
 class Queryer;
+class Events;
 
-using UpdateSystem = void(*)(Commands&, Queryer, Resources);
+using UpdateSystem = void(*)(Commands&, Queryer, Resources, Events&);
 using StartupSystem = void(*)(Commands&);
 
 class World final {
@@ -148,6 +251,7 @@ private:
     std::unordered_map<ComponentID, ResourceInfo> resources_;
     std::vector<StartupSystem> startupSystems_;
     std::vector<UpdateSystem> updateSystems_;
+    Events events_;
 };
 
 class Commands final {
@@ -159,27 +263,26 @@ private:
     struct ResourceDestoryInfo {
         uint32_t index;
         DestroyFunc destroy;
-        ResourceDestoryInfo(uint32_t index, DestroyFunc destoroy) : index(index), destroy(destoroy) {}
+        ResourceDestoryInfo(uint32_t index, DestroyFunc destroy) : index(index), destroy(destroy) {}
     };
 
-    using AssginFunc = std::function<void(void*)>;
+    using AssignFunc = std::function<void(void*)>;
 
     struct ComponentSpawnInfo {
-        AssginFunc assign;
+        AssignFunc assign;
         World::Pool::CreateFunc create;
         World::Pool::DestoryFunc destroy;
         ComponentID index;
     };
 
     struct EntitySpawnInfo {
-        Entity entity;
+        Entity entity; 
         std::vector<ComponentSpawnInfo> components; 
     };
 
     std::vector<Entity> destroyEntities_;
     std::vector<ResourceDestoryInfo> destoryResources_;
     std::vector<EntitySpawnInfo> spawnEntities_;
-    std::vector<ComponentSpawnInfo> spawnComponents_;
 public:
     Commands(World& world) : world_(world) {}
 
@@ -195,6 +298,7 @@ public:
         EntitySpawnInfo info;
         info.entity = EntityGenerator::Gen();
         doSpawn(info.entity, info.components, std::forward<ComponentTypes>(components)...);
+        spawnEntities_.push_back(info);
         return info.entity;
     }
 
@@ -235,7 +339,7 @@ public:
         for (auto& spawnInfo: spawnEntities_) {
             auto it = world_.entities_.emplace(spawnInfo.entity, World::ComponentContainer{});
             auto& componentContainer = it.first->second;
-            for (auto& componentInfo : spawnComponents_) {
+            for (auto& componentInfo : spawnInfo.components) {
                 componentContainer[componentInfo.index] = doSpawnWithoutType(spawnInfo.entity, componentInfo);
             }
         }
@@ -243,25 +347,24 @@ public:
 
 private:
     template <typename T, typename... Remains>
-    void doSpawn(Entity entity, std::vector<ComponentSpawnInfo>& spawnInfo, T&& component, Remains&&... remains) {
+    void doSpawn(Entity entity, std::vector<ComponentSpawnInfo>& spawnInfos, T&& component, Remains&&... remains) {
         ComponentSpawnInfo info;
         info.index = IndexGetter<Component>::Get<T>();
-        info.create = [](void)->void*{ return new T; };
+        info.create = [](void)->void* { return new T; };
         info.destroy = [](void* elem) { delete (T*)elem; };
-        info.assign = [&](void* elem) {
-            static auto com = std::forward<T>(component);
-            *((T*)elem) = com;
+        info.assign = [=](void* elem) {
+            *((T*)elem) = component;
         };
-        spawnInfo.push_back(info);
+        spawnInfos.push_back(info);
 
         if constexpr (sizeof...(Remains) != 0) {
-            doSpawn<Remains...>(entity, spawnInfo, std::forward<Remains>(remains)...);
+            doSpawn<Remains...>(entity, spawnInfos, std::forward<Remains>(remains)...);
         }
     }   
 
     void* doSpawnWithoutType(Entity entity, ComponentSpawnInfo& info) {
         if (auto it = world_.componentMap_.find(info.index); it == world_.componentMap_.end()) {
-            world_.componentMap_.emplace(index, World::ComponentInfo(info.create, info.destroy));
+            world_.componentMap_.emplace(info.index, World::ComponentInfo(info.create, info.destroy));
         }
         World::ComponentInfo& componentInfo = world_.componentMap_[info.index];
         void* elem = componentInfo.pool.Create();
@@ -374,7 +477,7 @@ inline void World::Startup() {
         sys(command);
         commandList.push_back(command);
     }
-
+ 
     for (auto& command : commandList) {
         command.Execute();
     }
@@ -385,9 +488,11 @@ inline void World::Update() {
 
     for (auto sys : updateSystems_) {
         Commands command{*this};
-        sys(command, Queryer{*this}, Resources{*this});
+        sys(command, Queryer{*this}, Resources{*this}, events_);
         commandList.push_back(command);
     }
+    events_.removeOldEvents();
+    events_.addAllEvent();
 
     for (auto& command : commandList) {
         command.Execute();
