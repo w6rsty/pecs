@@ -10,7 +10,7 @@ target_include_directories(pecs INTERFACE include)
 
 target_compile_features(pecs INTERFACE cxx_std_20)
 
-add_subdirectory(test)
+add_subdirectory(sandbox)
 
 if (APPLE) 
     set(CMAKE_CXX_COMPILER "clang++")

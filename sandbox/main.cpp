@@ -29,23 +29,27 @@ struct HP {
     float max = 100.0f;
 };
 
+struct Damage {
+    float value;
+};
+
+
 void startup(Commands& command) {
-    command.Spawn(Player{}, Name{"w6rsty"}, Position{ .x = 0.0f, .y = 0.0f }, HP{ .value = 100.0f })
-           .Spawn(Monster{}, Name{"XXX"}, Position{ .x = 1.0f, .y = 1.0f}, HP{ .value = 100.0f});
+    command.Spawn(Player{}, Name{"yuan_shen"}, Position{ .x = 1.0f, .y = 0.0f }, HP{ .value = 100.0f })
+           .Spawn(Monster{}, Name{"w6rsty"}, Position{ .x = 1.0f, .y = 1.0f}, HP{ .value = 100.0f }, Damage{ .value = 20.0f});
 }
 
 void attackSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
     auto monsters = queryer.Query<Monster>();
     auto players  = queryer.Query<Player>();
 
-    for (auto player : players) {
-        Position& p1 = queryer.Get<Position>(player);
-        for (auto monster : monsters) {
-            Position& p2 = queryer.Get<Position>(monster);
-
+    for (auto monster : monsters) {
+        Position& p1 = queryer.Get<Position>(monster);
+        for (auto player : players) {
+            Position& p2 = queryer.Get<Position>(player);
+        
             if (distance(p1, p2) <= 2.0f) {
-                auto& hp = queryer.Get<HP>(player);
-                hp.value -= 10.f;
+                queryer.Get<HP>(player).value -= queryer.Get<Damage>(monster).value;
                 std::cout << queryer.Get<Name>(monster).name << " 攻击了 " << queryer.Get<Name>(player).name << std::endl;
             }
         }
@@ -61,25 +65,32 @@ void echoPlayerSystem(Commands& command, Queryer queryer, Resources resources, E
     }
 }
 
-void echoHPSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
+void checkHPSystem(Commands& command, Queryer queryer, Resources resources, Events& events) {
     auto entities = queryer.Query<HP>();
     for (auto entity : entities) {
-        
-        std::cout << queryer.Get<Name>(entity).name << " HP: " <<queryer.Get<HP>(entity).value << std::endl;
+        auto hp = queryer.Get<HP>(entity).value;
+        if (hp <= 0.0f) {
+            std::cout << queryer.Get<Name>(entity).name << " dead" << std::endl;
+            command.Destory(entity);
+        }
     }
 }
+
 
 
 int main() {
     World world;
     world.AddStartupSystem(startup)
          .AddSystem(attackSystem)
-         .AddSystem(echoPlayerSystem);
+         .AddSystem(echoPlayerSystem)
+         .AddSystem(checkHPSystem)
+         ;
 
     world.Startup();
 
-    for (int i{0}; i < 3; i++) {
+    for (int i{0}; i < 6; i++) {
         world.Update();
+        std::cout << "==============" << std::endl;
     }
 
     world.Shutdown();
