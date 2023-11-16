@@ -4,6 +4,7 @@
 #include "entity/world.hpp"
 #include <_types/_uint32_t.h>
 #include <errno.h>
+#include <functional>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -47,8 +48,8 @@ class Commands;
 class Resources;
 class Queryer;
 
-using UpdateSystem = void(*)(Commands, Queryer, Resources);
-using StartupSystem = void(*)(Commands);
+using UpdateSystem = void(*)(Commands&, Queryer, Resources);
+using StartupSystem = void(*)(Commands&);
 
 class World final {
 public:
@@ -158,13 +159,27 @@ private:
     struct ResourceDestoryInfo {
         uint32_t index;
         DestroyFunc destroy;
-
         ResourceDestoryInfo(uint32_t index, DestroyFunc destoroy) : index(index), destroy(destoroy) {}
+    };
 
+    using AssginFunc = std::function<void(void*)>;
+
+    struct ComponentSpawnInfo {
+        AssginFunc assign;
+        World::Pool::CreateFunc create;
+        World::Pool::DestoryFunc destroy;
+        ComponentID index;
+    };
+
+    struct EntitySpawnInfo {
+        Entity entity;
+        std::vector<ComponentSpawnInfo> components; 
     };
 
     std::vector<Entity> destroyEntities_;
     std::vector<ResourceDestoryInfo> destoryResources_;
+    std::vector<EntitySpawnInfo> spawnEntities_;
+    std::vector<ComponentSpawnInfo> spawnComponents_;
 public:
     Commands(World& world) : world_(world) {}
 
@@ -177,9 +192,10 @@ public:
 
     template <typename... ComponentTypes>
     Entity SpawnAndReturn(ComponentTypes&&... components) {
-        Entity entity = EntityGenerator::Gen();
-        doSpawn(entity, std::forward<ComponentTypes>(components)...);
-        return entity;
+        EntitySpawnInfo info;
+        info.entity = EntityGenerator::Gen();
+        doSpawn(info.entity, info.components, std::forward<ComponentTypes>(components)...);
+        return info.entity;
     }
 
     Commands& Destory(Entity entity) {
@@ -204,46 +220,58 @@ public:
     template <typename T>
     Commands& RemoveResource() {
         auto index = IndexGetter<Resource>::Get<T>();
-        if (auto it = world_.resources_.find(index); it != world_.resources_.end()) {
-            delete (T*)it->second.resource;
-            it->second.resource = nullptr;
-        }
+        destoryResources_.push_back(ResourceDestoryInfo(index, [](void* elem) { delete (T*)elem; }));
         return *this;
     }
 
     void Execute() {
+        for (auto& info : destoryResources_) {
+            removeResource(info);
+        }
         for (auto e : destroyEntities_) {
-            destory(e);
+            destoryEntity(e);
+        }
+
+        for (auto& spawnInfo: spawnEntities_) {
+            auto it = world_.entities_.emplace(spawnInfo.entity, World::ComponentContainer{});
+            auto& componentContainer = it.first->second;
+            for (auto& componentInfo : spawnComponents_) {
+                componentContainer[componentInfo.index] = doSpawnWithoutType(spawnInfo.entity, componentInfo);
+            }
         }
     }
 
 private:
     template <typename T, typename... Remains>
-    void doSpawn(Entity entity, T&& component, Remains&&... remains) {
-        auto index = IndexGetter<Component>::Get<T>(); // 每种Component都会具有单独的Index计数器
-        if (auto it = world_.componentMap_.find(index); it == world_.componentMap_.end()) {
-            // 没有找到则生成新的Index
-            // TODO: might unecessary, need test
-            world_.componentMap_.emplace(index, World::ComponentInfo(
-                []()->void* { return new T; },
-                [](void* elem) { delete (T*)(elem); }
-            ));
+    void doSpawn(Entity entity, std::vector<ComponentSpawnInfo>& spawnInfo, T&& component, Remains&&... remains) {
+        ComponentSpawnInfo info;
+        info.index = IndexGetter<Component>::Get<T>();
+        info.create = [](void)->void*{ return new T; };
+        info.destroy = [](void* elem) { delete (T*)elem; };
+        info.assign = [&](void* elem) {
+            static auto com = std::forward<T>(component);
+            *((T*)elem) = com;
+        };
+        spawnInfo.push_back(info);
+
+        if constexpr (sizeof...(Remains) != 0) {
+            doSpawn<Remains...>(entity, spawnInfo, std::forward<Remains>(remains)...);
         }
-        World::ComponentInfo& componentInfo = world_.componentMap_[index];
+    }   
+
+    void* doSpawnWithoutType(Entity entity, ComponentSpawnInfo& info) {
+        if (auto it = world_.componentMap_.find(info.index); it == world_.componentMap_.end()) {
+            world_.componentMap_.emplace(index, World::ComponentInfo(info.create, info.destroy));
+        }
+        World::ComponentInfo& componentInfo = world_.componentMap_[info.index];
         void* elem = componentInfo.pool.Create();
-        *((T*)elem) = std::forward<T>(component);
+        info.assign(elem);
         componentInfo.sparseSet.add(entity);
-
-        auto it = world_.entities_.emplace(entity, World::ComponentContainer{});
-        it.first->second[index] = elem;
-
-        // 递归可变参数
-        if constexpr (sizeof...(remains) != 0) {
-            doSpawn<Remains...>(entity, std::forward<Remains>(remains)...);
-        }
+        return elem;
     }
 
-    void destory(Entity entity) {
+
+    void destoryEntity(Entity entity) {
         if (auto it = world_.entities_.find(entity); it != world_.entities_.end()) {
             for (auto [id, component] : it->second) {
                 auto& componentInfo = world_.componentMap_[id];
@@ -269,14 +297,14 @@ public:
     Resources(World& world) : world_(world) {}
 
     template <typename T>
-    bool has() const {
+    bool Has() const {
         auto index = IndexGetter<Resource>::Get<T>();
         auto it = world_.resources_.find(index);
         return it != world_.resources_.end() && it->second.resource;
     }
 
     template <typename T>
-    T& get() {
+    T& Get() {
         auto index = IndexGetter<Resource>::Get<T>();
         return *((T*)world_.resources_[index].resource);
     }
@@ -339,14 +367,30 @@ private:
 };
 
 inline void World::Startup() {
+    std::vector<Commands> commandList;
+    
     for (auto sys : startupSystems_) {
-        sys(Commands{*this});
+        Commands command{*this};
+        sys(command);
+        commandList.push_back(command);
+    }
+
+    for (auto& command : commandList) {
+        command.Execute();
     }
 }
 
 inline void World::Update() {
+    std::vector<Commands> commandList;
+
     for (auto sys : updateSystems_) {
-        sys(Commands{*this}, Queryer{*this}, Resources{*this});
+        Commands command{*this};
+        sys(command, Queryer{*this}, Resources{*this});
+        commandList.push_back(command);
+    }
+
+    for (auto& command : commandList) {
+        command.Execute();
     }
 }
 

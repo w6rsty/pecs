@@ -30,12 +30,12 @@ struct HP {
     float max = 100.0f;
 };
 
-void startup(Commands command) {
+void startup(Commands& command) {
     command.Spawn(Player{}, Name{"w6rsty"}, Position{ .x = 0.0f, .y = 0.0f }, HP{ .value = 100.0f })
            .Spawn(Monster{}, Name{"XXX"}, Position{ .x = 1.0f, .y = 1.0f}, HP{ .value = 100.0f});
 }
 
-void attackSystem(Commands command, Queryer queryer, Resources resources) {
+void attackSystem(Commands& command, Queryer queryer, Resources resources) {
     auto monsters = queryer.Query<Monster>();
     auto players  = queryer.Query<Player>();
 
@@ -53,7 +53,7 @@ void attackSystem(Commands command, Queryer queryer, Resources resources) {
     }
 }
 
-void echoPlayerSystem(Commands command, Queryer queryer, Resources resources) {
+void echoPlayerSystem(Commands& command, Queryer queryer, Resources resources) {
     auto entities = queryer.Query<Player>();
     for (auto entity : entities) {
         std::cout << queryer.Get<Name>(entity).name << " | " 
@@ -62,7 +62,7 @@ void echoPlayerSystem(Commands command, Queryer queryer, Resources resources) {
     }
 }
 
-void echoHPSystem(Commands command, Queryer queryer, Resources resources) {
+void echoHPSystem(Commands& command, Queryer queryer, Resources resources) {
     auto entities = queryer.Query<HP>();
     for (auto entity : entities) {
         
